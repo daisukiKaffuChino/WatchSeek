@@ -6,13 +6,10 @@ import android.content.ActivityNotFoundException
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -29,6 +26,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -40,8 +38,8 @@ import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.material.dialog.Alert
 import androidx.wear.compose.material.dialog.Dialog
 import androidx.wear.input.RemoteInputIntentHelper
+import dev.jeziellago.compose.markdowntext.MarkdownText
 import me.chino.watchseek.data.Chat
-import me.chino.watchseek.data.ChatMessage
 import me.chino.watchseek.data.SettingsManager
 import me.chino.watchseek.R
 import kotlinx.coroutines.launch
@@ -270,7 +268,7 @@ fun SettingsScreen(settingsManager: SettingsManager, onSaved: () -> Unit) {
 
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK && result.data != null) {
-            val results = RemoteInput.getResultsFromIntent(result.data)
+            val results = RemoteInput.getResultsFromIntent(result.data!!)
             results?.getCharSequence("input_value")?.let { text ->
                 when (pendingInputKey) {
                     "api_key" -> apiKey = text.toString()
@@ -284,7 +282,7 @@ fun SettingsScreen(settingsManager: SettingsManager, onSaved: () -> Unit) {
     fun launchInput(label: String, key: String) {
         pendingInputKey = key
         val intent = RemoteInputIntentHelper.createActionRemoteInputIntent()
-        val remoteInput = RemoteInput.Builder("input_value").setLabel(label).build()
+        val remoteInput = android.app.RemoteInput.Builder("input_value").setLabel(label).build()
         RemoteInputIntentHelper.putRemoteInputsExtra(intent, listOf(remoteInput))
         try { launcher.launch(intent) } catch (e: ActivityNotFoundException) { showFallbackInput = true }
     }
@@ -349,7 +347,6 @@ fun ChatScreen(viewModel: ChatViewModel) {
     val messages = chat?.messagesList ?: emptyList()
     val listState = rememberScalingLazyListState()
 
-    // Persistent visibility state for the button
     var isButtonVisible by remember { mutableStateOf(true) }
 
     LaunchedEffect(listState, autoHideEnabled) {
@@ -362,9 +359,9 @@ fun ChatScreen(viewModel: ChatViewModel) {
         snapshotFlow { listState.centerItemIndex to listState.centerItemScrollOffset }
             .collect { (index, offset) ->
                 if (index > prevIndex || (index == prevIndex && offset > prevOffset)) {
-                    isButtonVisible = false // Scrolling down
+                    isButtonVisible = false 
                 } else if (index < prevIndex || (index == prevIndex && offset < prevOffset)) {
-                    isButtonVisible = true // Scrolling up
+                    isButtonVisible = true 
                 }
                 prevIndex = index
                 prevOffset = offset
@@ -374,13 +371,13 @@ fun ChatScreen(viewModel: ChatViewModel) {
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) {
             listState.animateScrollToItem(messages.size - 1)
-            isButtonVisible = true // Re-show button when new message arrives
+            isButtonVisible = true 
         }
     }
 
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK && result.data != null) {
-            val results = RemoteInput.getResultsFromIntent(result.data)
+            val results = RemoteInput.getResultsFromIntent(result.data!!)
             results?.getCharSequence("chat_input")?.let { viewModel.sendMessage(it.toString()) }
         }
     }
@@ -388,6 +385,7 @@ fun ChatScreen(viewModel: ChatViewModel) {
     Box(modifier = Modifier.fillMaxSize()) {
         ScalingLazyColumn(modifier = Modifier.fillMaxSize(), state = listState) {
             item { ListHeader { Text(chat?.title ?: "Chat") } }
+            
             if (!isKeySet) {
                 item {
                     Card(onClick = {}, modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp), backgroundPainter = CardDefaults.cardBackgroundPainter(startBackgroundColor = Color(0xFF422020), endBackgroundColor = Color(0xFF301010))) {
@@ -399,19 +397,56 @@ fun ChatScreen(viewModel: ChatViewModel) {
             }
 
             items(messages) { msg ->
+                var showReasoning by remember { mutableStateOf(false) }
+                
                 Card(onClick = {}, modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
                     Column {
-                        Text(text = if (msg.role == "user") "You" else "AI", style = MaterialTheme.typography.caption3, color = if (msg.role == "user") MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
+                        Text(
+                            text = if (msg.role == "user") "You" else "AI", 
+                            style = MaterialTheme.typography.caption3, 
+                            color = if (msg.role == "user") MaterialTheme.colors.secondary else MaterialTheme.colors.primary,
+                            fontWeight = FontWeight.Bold
+                        )
+                        
+                        // Reasoning Section (Collapsible)
                         if (msg.reasoningContent.isNotEmpty()) {
                             Spacer(modifier = Modifier.height(4.dp))
-                            Text(text = "Thinking Process:", style = MaterialTheme.typography.caption3, color = MaterialTheme.colors.primaryVariant)
-                            Text(text = msg.reasoningContent, style = MaterialTheme.typography.caption3, color = Color.Gray)
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(Color.White.copy(alpha = 0.05f))
+                                    .clickable { showReasoning = !showReasoning }
+                                    .padding(4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = if (showReasoning) "▼ Thought" else "▶ Thought", 
+                                    style = MaterialTheme.typography.caption3, 
+                                    color = MaterialTheme.colors.primaryVariant
+                                )
+                            }
+                            if (showReasoning) {
+                                MarkdownText(
+                                    markdown = msg.reasoningContent,
+                                    style = TextStyle(color = Color.Gray, fontSize = 12.sp),
+                                    modifier = Modifier.fillMaxWidth().padding(4.dp)
+                                )
+                            }
                             Spacer(modifier = Modifier.height(4.dp))
-                            Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(MaterialTheme.colors.onSurface.copy(alpha = 0.1f)))
+                            Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(Color.White.copy(alpha = 0.1f)))
                             Spacer(modifier = Modifier.height(4.dp))
                         }
-                        val displayContent = if (msg.content.isEmpty() && msg.role != "user" && msg.reasoningContent.isNotEmpty()) "(Thinking complete, no additional output)" else msg.content
-                        Text(displayContent)
+
+                        // Main Content with Markdown Support
+                        val displayContent = if (msg.content.isEmpty() && msg.role != "user" && msg.reasoningContent.isNotEmpty()) 
+                            "*(Thinking complete)*" else msg.content
+                        
+                        MarkdownText(
+                            markdown = displayContent,
+                            style = TextStyle(color = Color.White, fontSize = 14.sp),
+                            modifier = Modifier.fillMaxWidth()
+                        )
                     }
                 }
             }
@@ -428,7 +463,7 @@ fun ChatScreen(viewModel: ChatViewModel) {
                 ) {
                     Button(onClick = {
                         val intent = RemoteInputIntentHelper.createActionRemoteInputIntent()
-                        val remoteInput = RemoteInput.Builder("chat_input").setLabel("Message").build()
+                        val remoteInput = android.app.RemoteInput.Builder("chat_input").setLabel("Message").build()
                         RemoteInputIntentHelper.putRemoteInputsExtra(intent, listOf(remoteInput))
                         try { launcher.launch(intent) } catch (e: ActivityNotFoundException) { showFallbackInput = true }
                     }, modifier = Modifier.size(ButtonDefaults.DefaultButtonSize)) { Text("Ask") }

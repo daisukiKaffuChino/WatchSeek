@@ -37,7 +37,6 @@ class ChatViewModel(val settingsManager: SettingsManager, private val chatHistor
 
     private val json = Json { ignoreUnknownKeys = true }
     
-    // OkHttpClient without logging body to prevent buffering stream data
     private val client = OkHttpClient.Builder()
         .connectTimeout(60, TimeUnit.SECONDS)
         .readTimeout(60, TimeUnit.SECONDS)
@@ -51,11 +50,8 @@ class ChatViewModel(val settingsManager: SettingsManager, private val chatHistor
         viewModelScope.launch {
             chatHistoryManager.currentChat.collect { chat ->
                 if (chat != null) {
-                    val currentLocal = _currentChat.value
-                    // Only update if current chat matches the stream or local is empty
-                    if (currentLocal == null || currentLocal.id == chat.id || currentLocal.id.isEmpty()) {
-                        _currentChat.value = chat
-                    }
+                    // 修复：移除拦截逻辑，允许从 DataStore 同步最新的当前聊天（包括切换聊天）
+                    _currentChat.value = chat
                 }
             }
         }
@@ -193,16 +189,13 @@ class ChatViewModel(val settingsManager: SettingsManager, private val chatHistor
                                             .addAllMessages(finalMessages)
                                             .build()
                                         
-                                        // Update state flow to trigger UI refresh
                                         _currentChat.value = streamingChat
                                     }
                                 } catch (e: Exception) {
-                                    // Skip malformed chunks
                                 }
                             }
                         }
                     }
-                    // Save and Select in one go to prevent race conditions
                     chatHistoryManager.saveAndSelectChat(_currentChat.value!!)
                 }
             } catch (e: Exception) {

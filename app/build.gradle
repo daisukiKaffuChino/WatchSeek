@@ -3,7 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
-    id("com.google.protobuf") version "0.9.4"
+    id("com.google.protobuf") version "0.9.6"
 }
 
 android {
@@ -37,7 +37,7 @@ android {
     }
     protobuf {
         protoc {
-            artifact = "com.google.protobuf:protoc:3.25.1"
+            artifact = "com.google.protobuf:protoc:4.33.4"
         }
 
         generateProtoTasks {
@@ -69,7 +69,7 @@ dependencies {
     implementation libs.horologist.compose.tools
     implementation libs.horologist.tiles
     implementation libs.watchface.complications.data.source.ktx
-
+    
     // New dependencies
     implementation libs.retrofit.core
     implementation libs.retrofit.converter.kotlinx.serialization
@@ -80,8 +80,12 @@ dependencies {
     implementation libs.lifecycle.runtime.compose
     implementation libs.datastore.preferences
     implementation libs.wear.input
-    implementation libs.protobuf.kotlin.lite
     implementation libs.datastore
+    implementation libs.protobuf.lite
+    
+    // Markdown & Image Support
+    implementation libs.compose.markdown
+    implementation libs.coil.compose
 
     androidTestImplementation platform(libs.compose.bom)
     androidTestImplementation libs.ui.test.junit4
