@@ -22,4 +22,5 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "WatchSeek"
+
 include ':app'
