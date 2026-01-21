@@ -19,8 +19,7 @@ android {
         versionCode 1
         versionName "1.0"
         ndk {
-            //noinspection ChromeOsAbiSupport
-            abiFilters "armeabi-v7a", "arm64-v8a"
+            abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
         }
     }
 
@@ -77,7 +76,7 @@ dependencies {
     implementation libs.horologist.compose.tools
     implementation libs.horologist.tiles
     implementation libs.watchface.complications.data.source.ktx
-    
+
     // New dependencies
     implementation libs.retrofit.core
     implementation libs.retrofit.converter.kotlinx.serialization
@@ -90,7 +89,7 @@ dependencies {
     implementation libs.wear.input
     implementation libs.datastore
     implementation libs.protobuf.lite
-    
+
     // Markdown & Image Support
     //implementation libs.compose.markdown
     implementation project(':markdowntext')

@@ -3,6 +3,8 @@ package me.chino.watchseek.presentation
 import android.app.Activity
 import android.app.RemoteInput
 import android.content.ActivityNotFoundException
+import android.content.pm.PackageManager
+import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -24,7 +26,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -67,11 +71,11 @@ fun MainScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                item { ListHeader { Text("WatchSeek") } }
+                item { ListHeader { Text(stringResource(R.string.app_name)) } }
                 item {
                     Chip(
                         onClick = { viewModel.createNewChat(); onChatSelected() },
-                        label = { Text("New Chat") },
+                        label = { Text(stringResource(R.string.new_chat)) },
                         colors = ChipDefaults.primaryChipColors(),
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)
                     )
@@ -79,7 +83,7 @@ fun MainScreen(
                 item {
                     Chip(
                         onClick = onSettingsSelected,
-                        label = { Text("Settings") },
+                        label = { Text(stringResource(R.string.settings)) },
                         colors = ChipDefaults.secondaryChipColors(),
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)
                     )
@@ -87,14 +91,14 @@ fun MainScreen(
                 item {
                     Chip(
                         onClick = onAboutSelected,
-                        label = { Text("About") },
+                        label = { Text(stringResource(R.string.about)) },
                         colors = ChipDefaults.secondaryChipColors(),
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)
                     )
                 }
                 item {
                     Text(
-                        "Swipe Left for History",
+                        stringResource(R.string.swipe_left_history),
                         style = MaterialTheme.typography.caption3,
                         modifier = Modifier.padding(top = 8.dp),
                         color = Color.Gray
@@ -115,11 +119,11 @@ fun HistoryList(viewModel: ChatViewModel, onChatSelected: () -> Unit) {
     var chatForMenu by remember { mutableStateOf<Chat?>(null) }
 
     ScalingLazyColumn(modifier = Modifier.fillMaxSize()) {
-        item { ListHeader { Text("History") } }
+        item { ListHeader { Text(stringResource(R.string.history)) } }
         if (history.isEmpty()) {
             item {
                 Text(
-                    "No history yet",
+                    stringResource(R.string.no_history),
                     modifier = Modifier.fillMaxWidth().padding(16.dp),
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.body2
@@ -129,7 +133,7 @@ fun HistoryList(viewModel: ChatViewModel, onChatSelected: () -> Unit) {
         items(history, key = { it.id }) { chat ->
             AppCard(
                 onClick = { chatForMenu = chat },
-                appName = { Text("Chat") },
+                appName = { Text(stringResource(R.string.chat)) },
                 time = {
                     val sdf = remember { SimpleDateFormat("MM/dd HH:mm", Locale.getDefault()) }
                     Text(sdf.format(Date(chat.timestamp)))
@@ -151,13 +155,13 @@ fun HistoryList(viewModel: ChatViewModel, onChatSelected: () -> Unit) {
 
     Dialog(showDialog = chatForMenu != null, onDismissRequest = { chatForMenu = null }) {
         Alert(
-            title = { Text("Options", textAlign = TextAlign.Center) },
+            title = { Text(stringResource(R.string.options), textAlign = TextAlign.Center) },
             modifier = Modifier.fillMaxWidth(),
             content = {
                 item {
                     Chip(
                         onClick = { chatForMenu?.let { viewModel.selectChat(it); onChatSelected() }; chatForMenu = null },
-                        label = { Text("View") },
+                        label = { Text(stringResource(R.string.view)) },
                         colors = ChipDefaults.primaryChipColors(),
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -165,7 +169,7 @@ fun HistoryList(viewModel: ChatViewModel, onChatSelected: () -> Unit) {
                 item {
                     Chip(
                         onClick = { chatToDelete = chatForMenu; showDeleteDialog = true; chatForMenu = null },
-                        label = { Text("Delete") },
+                        label = { Text(stringResource(R.string.delete)) },
                         colors = ChipDefaults.secondaryChipColors(),
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -176,12 +180,12 @@ fun HistoryList(viewModel: ChatViewModel, onChatSelected: () -> Unit) {
 
     Dialog(showDialog = showDeleteDialog, onDismissRequest = { showDeleteDialog = false }) {
         Alert(
-            title = { Text("Delete Chat") },
-            negativeButton = { Button(onClick = { showDeleteDialog = false }) { Text("No") } },
+            title = { Text(stringResource(R.string.delete_chat)) },
+            negativeButton = { Button(onClick = { showDeleteDialog = false }) { Text(stringResource(R.string.no)) } },
             positiveButton = {
-                Button(onClick = { chatToDelete?.let { viewModel.deleteChat(it.id) }; showDeleteDialog = false }) { Text("Yes") }
+                Button(onClick = { chatToDelete?.let { viewModel.deleteChat(it.id) }; showDeleteDialog = false }) { Text(stringResource(R.string.yes)) }
             },
-            content = { Text("Are you sure you want to delete this chat?", textAlign = TextAlign.Center) }
+            content = { Text(stringResource(R.string.delete_confirm), textAlign = TextAlign.Center) }
         )
     }
 }
@@ -209,7 +213,7 @@ fun TextInputDialog(
                         modifier = Modifier.fillMaxWidth(),
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done)
                     )
-                    if (text.isEmpty()) Text("Type here...", color = Color.Gray, fontSize = 14.sp)
+                    if (text.isEmpty()) Text(stringResource(R.string.type_here), color = Color.Gray, fontSize = 14.sp)
                 }
             }
         )
@@ -218,30 +222,45 @@ fun TextInputDialog(
 
 @Composable
 fun AboutScreen() {
+    val context = LocalContext.current
+    val versionName = remember {
+        try {
+            val packageInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                context.packageManager.getPackageInfo(context.packageName, PackageManager.PackageInfoFlags.of(0))
+            } else {
+                @Suppress("DEPRECATION")
+                context.packageManager.getPackageInfo(context.packageName, 0)
+            }
+            packageInfo.versionName
+        } catch (_: Exception) {
+            "1.0.0"
+        }
+    }
+
     ScalingLazyColumn(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
-        item { ListHeader { Text("About") } }
+        item { ListHeader { Text(stringResource(R.string.about)) } }
         item {
             Column(modifier = Modifier.padding(horizontal = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("WatchSeek", style = MaterialTheme.typography.title2)
-                Text("v1.0.0", style = MaterialTheme.typography.caption2)
+                Text(stringResource(R.string.app_name), style = MaterialTheme.typography.title2)
+                Text("v$versionName", style = MaterialTheme.typography.caption2)
                 Spacer(modifier = Modifier.height(4.dp))
-                Text("A lightweight AI client for your wrist.", textAlign = TextAlign.Center, style = MaterialTheme.typography.caption3)
+                Text(stringResource(R.string.about_desc), textAlign = TextAlign.Center, style = MaterialTheme.typography.caption3)
             }
         }
         item {
-            AppCard(onClick = {}, appName = { Text("Developer") }, time = {}, title = { Text("@daisukiKaffuChino", style = MaterialTheme.typography.caption2) }, appImage = { Image(painter = painterResource(id = R.drawable.developer_avatar), contentDescription = "Avatar", modifier = Modifier.size(24.dp).clip(CircleShape), contentScale = ContentScale.Crop) }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
+            AppCard(onClick = {}, appName = { Text(stringResource(R.string.developer)) }, time = {}, title = { Text("@daisukiKaffuChino", style = MaterialTheme.typography.caption2) }, appImage = { Image(painter = painterResource(id = R.drawable.developer_avatar), contentDescription = "Avatar", modifier = Modifier.size(24.dp).clip(CircleShape), contentScale = ContentScale.Crop) }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
                 Text("Feel free to follow me on GitHub!", style = MaterialTheme.typography.caption3)
             }
         }
         item {
-            TitleCard(onClick = {}, title = { Text("Open Source") }, modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
+            TitleCard(onClick = {}, title = { Text(stringResource(R.string.open_source)) }, modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
                 Column {
                     Text("Apache-2.0 licensed", style = MaterialTheme.typography.caption3)
                     Text("github.com/daisukiKaffuChino/WatchSeek", style = MaterialTheme.typography.caption3, color = MaterialTheme.colors.primary, maxLines = 2)
                 }
             }
         }
-        item { Text("Made with ❤️", style = MaterialTheme.typography.caption2, modifier = Modifier.padding(vertical = 12.dp)) }
+        item { Text(stringResource(R.string.made_with), style = MaterialTheme.typography.caption2, modifier = Modifier.padding(vertical = 12.dp)) }
     }
 }
 
@@ -282,25 +301,25 @@ fun SettingsScreen(settingsManager: SettingsManager, onSaved: () -> Unit) {
     fun launchInput(label: String, key: String) {
         pendingInputKey = key
         val intent = RemoteInputIntentHelper.createActionRemoteInputIntent()
-        val remoteInput = android.app.RemoteInput.Builder("input_value").setLabel(label).build()
+        val remoteInput = RemoteInput.Builder("input_value").setLabel(label).build()
         RemoteInputIntentHelper.putRemoteInputsExtra(intent, listOf(remoteInput))
-        try { launcher.launch(intent) } catch (e: ActivityNotFoundException) { showFallbackInput = true }
+        try { launcher.launch(intent) } catch (_: ActivityNotFoundException) { showFallbackInput = true }
     }
 
     ScalingLazyColumn(modifier = Modifier.fillMaxSize()) {
-        item { ListHeader { Text("Settings") } }
+        item { ListHeader { Text(stringResource(R.string.settings)) } }
         item {
             Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp)) {
                 Text("API Key", style = MaterialTheme.typography.caption2)
                 Button(onClick = { launchInput("API Key", "api_key") }, modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
-                    val displayKey = if (apiKey.length > 12) "${apiKey.take(6)}...${apiKey.takeLast(6)}" else apiKey.ifEmpty { "Tap to Set Key" }
+                    val displayKey = if (apiKey.length > 12) "${apiKey.take(6)}...${apiKey.takeLast(6)}" else apiKey.ifEmpty { stringResource(R.string.tap_to_set) }
                     Text(displayKey, maxLines = 1)
                 }
             }
         }
         item {
             Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp)) {
-                Text("Model", style = MaterialTheme.typography.caption2)
+                Text(stringResource(R.string.model), style = MaterialTheme.typography.caption2)
                 val models = listOf("gpt-3.5-turbo", "gpt-4o", "deepseek-chat", "deepseek-reasoner")
                 models.forEach { model ->
                     ToggleChip(checked = selectedModel == model, onCheckedChange = { selectedModel = model; if (model.startsWith("deepseek")) baseUrl = "https://api.deepseek.com/" else if (model.startsWith("gpt")) baseUrl = "https://api.openai.com/" }, label = { Text(model) }, toggleControl = { RadioButton(selected = selectedModel == model) }, modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp))
@@ -317,13 +336,13 @@ fun SettingsScreen(settingsManager: SettingsManager, onSaved: () -> Unit) {
             ToggleChip(
                 checked = autoHideEnabled,
                 onCheckedChange = { scope.launch { settingsManager.saveAutoHideChatButton(it) } },
-                label = { Text("Auto-hide Ask button") },
+                label = { Text(stringResource(R.string.auto_hide_button)) },
                 toggleControl = { Switch(checked = autoHideEnabled) },
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)
             )
         }
         item {
-            Button(onClick = { if (apiKey.isNotBlank()) { scope.launch { settingsManager.saveSettings(apiKey, selectedModel, baseUrl); onSaved() } } }, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), enabled = apiKey.isNotBlank()) { Text("Save") }
+            Button(onClick = { if (apiKey.isNotBlank()) { scope.launch { settingsManager.saveSettings(apiKey, selectedModel, baseUrl); onSaved() } } }, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), enabled = apiKey.isNotBlank()) { Text(stringResource(R.string.save)) }
         }
     }
 
@@ -360,7 +379,7 @@ fun ChatScreen(viewModel: ChatViewModel) {
             .collect { (index, offset) ->
                 if (index > prevIndex || (index == prevIndex && offset > prevOffset)) {
                     isButtonVisible = false 
-                } else if (index < prevIndex || (index == prevIndex && offset < prevOffset)) {
+                } else if (index < prevIndex || (offset < prevOffset)) {
                     isButtonVisible = true 
                 }
                 prevIndex = index
@@ -384,16 +403,16 @@ fun ChatScreen(viewModel: ChatViewModel) {
 
     Box(modifier = Modifier.fillMaxSize()) {
         ScalingLazyColumn(modifier = Modifier.fillMaxSize(), state = listState) {
-            item { ListHeader { Text(chat?.title ?: "Chat") } }
+            item { ListHeader { Text(chat?.title ?: stringResource(R.string.chat)) } }
             
             if (!isKeySet) {
                 item {
                     Card(onClick = {}, modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp), backgroundPainter = CardDefaults.cardBackgroundPainter(startBackgroundColor = Color(0xFF422020), endBackgroundColor = Color(0xFF301010))) {
-                        Text("API Key not set.\nPlease configure it in Settings.", style = MaterialTheme.typography.caption2, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                        Text(stringResource(R.string.api_key_not_set), style = MaterialTheme.typography.caption2, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
                     }
                 }
             } else if (messages.isEmpty() && !isLoading) {
-                item { Text("No messages yet.\nTap 'Ask' to start!", style = MaterialTheme.typography.body2, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(16.dp)) }
+                item { Text(stringResource(R.string.no_messages), style = MaterialTheme.typography.body2, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(16.dp)) }
             }
 
             items(messages) { msg ->
@@ -420,8 +439,9 @@ fun ChatScreen(viewModel: ChatViewModel) {
                                     .padding(4.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
+                                val reasoningPrefix = if (showReasoning) "▼ " else "▶ "
                                 Text(
-                                    text = if (showReasoning) "▼ Thought" else "▶ Thought", 
+                                    text = reasoningPrefix + stringResource(R.string.thinking_process), 
                                     style = MaterialTheme.typography.caption3, 
                                     color = MaterialTheme.colors.primaryVariant
                                 )
@@ -440,7 +460,7 @@ fun ChatScreen(viewModel: ChatViewModel) {
 
                         // Main Content with Markdown Support
                         val displayContent = if (msg.content.isEmpty() && msg.role != "user" && msg.reasoningContent.isNotEmpty()) 
-                            "*(Thinking complete)*" else msg.content
+                            "*(" + stringResource(R.string.thinking_complete) + ")*" else msg.content
                         
                         MarkdownText(
                             markdown = displayContent,
@@ -463,10 +483,10 @@ fun ChatScreen(viewModel: ChatViewModel) {
                 ) {
                     Button(onClick = {
                         val intent = RemoteInputIntentHelper.createActionRemoteInputIntent()
-                        val remoteInput = android.app.RemoteInput.Builder("chat_input").setLabel("Message").build()
+                        val remoteInput = RemoteInput.Builder("chat_input").setLabel("Message").build()
                         RemoteInputIntentHelper.putRemoteInputsExtra(intent, listOf(remoteInput))
-                        try { launcher.launch(intent) } catch (e: ActivityNotFoundException) { showFallbackInput = true }
-                    }, modifier = Modifier.size(ButtonDefaults.DefaultButtonSize)) { Text("Ask") }
+                        try { launcher.launch(intent) } catch (_: ActivityNotFoundException) { showFallbackInput = true }
+                    }, modifier = Modifier.size(ButtonDefaults.DefaultButtonSize)) { Text(stringResource(R.string.ask)) }
                 }
             }
         }
@@ -475,13 +495,13 @@ fun ChatScreen(viewModel: ChatViewModel) {
     if (error != null) {
         Dialog(showDialog = true, onDismissRequest = { viewModel.clearError() }) {
             Alert(
-                title = { Text("Error", color = Color.Red) },
-                positiveButton = { Button(onClick = { viewModel.clearError() }, colors = ButtonDefaults.primaryButtonColors()) { Text("OK") } },
+                title = { Text(stringResource(R.string.error), color = Color.Red) },
+                positiveButton = { Button(onClick = { viewModel.clearError() }, colors = ButtonDefaults.primaryButtonColors()) { Text(stringResource(R.string.ok)) } },
                 negativeButton = { },
                 content = { Text(error!!, textAlign = TextAlign.Center, style = MaterialTheme.typography.caption3) }
             )
         }
     }
 
-    TextInputDialog(show = showFallbackInput, title = "New Message", onDismiss = { showFallbackInput = false }, onConfirm = { text -> viewModel.sendMessage(text) })
+    TextInputDialog(show = showFallbackInput, title = stringResource(R.string.new_chat), onDismiss = { showFallbackInput = false }, onConfirm = { text -> viewModel.sendMessage(text) })
 }

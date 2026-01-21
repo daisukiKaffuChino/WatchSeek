@@ -19,7 +19,7 @@ class SettingsManager(private val context: Context) {
     val apiKey: Flow<String?> = context.dataStore.data.map { it[API_KEY] }
     val model: Flow<String> = context.dataStore.data.map { it[MODEL] ?: "gpt-3.5-turbo" }
     val baseUrl: Flow<String> = context.dataStore.data.map { it[BASE_URL] ?: "https://api.openai.com/" }
-    val autoHideChatButton: Flow<Boolean> = context.dataStore.data.map { it[AUTO_HIDE_CHAT_BUTTON] ?: true }
+    val autoHideChatButton: Flow<Boolean> = context.dataStore.data.map { it[AUTO_HIDE_CHAT_BUTTON] ?: false }
 
     suspend fun saveSettings(apiKey: String, model: String, baseUrl: String) {
         context.dataStore.edit {
