@@ -23,4 +23,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "WatchSeek"
 
-include ':app'
+include ':app', ':markdowntext'
