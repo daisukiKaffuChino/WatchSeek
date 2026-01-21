@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+option java_package = "me.chino.watchseek.data";
+option java_multiple_files = true;
+
+message ChatHistory {
+  repeated Chat chats = 1;
+  optional string current_chat_id = 2;
+}
+
+message Chat {
+  string id = 1;
+  string title = 2;
+  int64 timestamp = 3;
+  repeated ChatMessage messages = 4;
+}
+
+message ChatMessage {
+  string role = 1;
+  string content = 2;
+  int64 timestamp = 3;
+  string reasoning_content = 4;
+}
