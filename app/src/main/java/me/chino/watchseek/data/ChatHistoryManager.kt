@@ -22,6 +22,8 @@ class ChatHistoryManager(private val context: Context) {
 
     val history: Flow<List<Chat>> = chatHistoryFlow.map { it.chatsList.sortedByDescending { chat -> chat.timestamp } }
 
+    val dailyUsage: Flow<List<TokenUsage>> = chatHistoryFlow.map { it.dailyUsageList }
+
     suspend fun saveChat(chat: Chat) {
         context.chatHistoryDataStore.updateData {
             val existingChats = it.chatsList.toMutableList()
@@ -52,7 +54,30 @@ class ChatHistoryManager(private val context: Context) {
         }
     }
 
-    // Generates a new Chat object without saving it to the DataStore immediately.
+    suspend fun recordTokenUsage(date: String, tokens: Int) {
+        context.chatHistoryDataStore.updateData { history ->
+            val usageList = history.dailyUsageList.toMutableList()
+            val index = usageList.indexOfFirst { it.date == date }
+            
+            if (index != -1) {
+                val current = usageList[index]
+                usageList[index] = current.toBuilder()
+                    .setTotalTokens(current.totalTokens + tokens)
+                    .build()
+            } else {
+                usageList.add(TokenUsage.newBuilder()
+                    .setDate(date)
+                    .setTotalTokens(tokens)
+                    .build())
+            }
+            
+            history.toBuilder()
+                .clearDailyUsage()
+                .addAllDailyUsage(usageList)
+                .build()
+        }
+    }
+
     fun generateTemporaryNewChat(): Chat {
         return Chat.newBuilder()
             .setId(UUID.randomUUID().toString())
@@ -61,7 +86,6 @@ class ChatHistoryManager(private val context: Context) {
             .build()
     }
 
-    // Creates and saves a new chat, then sets it as current.
     suspend fun createAndSelectNewChat(): Chat {
         val newChat = generateTemporaryNewChat()
         context.chatHistoryDataStore.updateData {
@@ -77,11 +101,11 @@ class ChatHistoryManager(private val context: Context) {
     }
 
     suspend fun getOrCreateInitialChat(): Chat {
-        val history = chatHistoryFlow.first()
-        return if (history.hasCurrentChatId() && history.currentChatId.isNotEmpty()) {
-            history.chatsList.find { it.id == history.currentChatId } ?: createAndSelectNewChat()
-        } else if (history.chatsList.isNotEmpty()) {
-            val firstChat = history.chatsList.first()
+        val historyFlow = chatHistoryFlow.first()
+        return if (historyFlow.hasCurrentChatId() && historyFlow.currentChatId.isNotEmpty()) {
+            historyFlow.chatsList.find { it.id == historyFlow.currentChatId } ?: createAndSelectNewChat()
+        } else if (historyFlow.chatsList.isNotEmpty()) {
+            val firstChat = historyFlow.chatsList.first()
             selectChat(firstChat)
             firstChat
         } else {
@@ -93,7 +117,7 @@ class ChatHistoryManager(private val context: Context) {
         context.chatHistoryDataStore.updateData { currentHistory ->
             val updatedChats = currentHistory.chatsList.filter { it.id != chatId }
             val newCurrentChatId = if (currentHistory.currentChatId == chatId) {
-                updatedChats.firstOrNull()?.id ?: "" // Select first or set to empty
+                updatedChats.firstOrNull()?.id ?: ""
             } else {
                 currentHistory.currentChatId
             }

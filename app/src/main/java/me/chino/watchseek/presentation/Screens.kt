@@ -54,8 +54,10 @@ import java.util.*
 fun MainScreen(
     viewModel: ChatViewModel,
     onChatSelected: () -> Unit,
+    onHistorySelected: () -> Unit,
     onSettingsSelected: () -> Unit,
-    onAboutSelected: () -> Unit
+    onAboutSelected: () -> Unit,
+    onStatisticsSelected: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
     val pagerState = rememberPagerState(initialPage = 0, pageCount = { 2 })
@@ -77,7 +79,15 @@ fun MainScreen(
                         onClick = { viewModel.createNewChat(); onChatSelected() },
                         label = { Text(stringResource(R.string.new_chat)) },
                         colors = ChipDefaults.primaryChipColors(),
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp)
+                    )
+                }
+                item {
+                    Chip(
+                        onClick = onStatisticsSelected,
+                        label = { Text(stringResource(R.string.statistics)) },
+                        colors = ChipDefaults.secondaryChipColors(),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp)
                     )
                 }
                 item {
@@ -85,7 +95,7 @@ fun MainScreen(
                         onClick = onSettingsSelected,
                         label = { Text(stringResource(R.string.settings)) },
                         colors = ChipDefaults.secondaryChipColors(),
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp)
                     )
                 }
                 item {
@@ -93,7 +103,7 @@ fun MainScreen(
                         onClick = onAboutSelected,
                         label = { Text(stringResource(R.string.about)) },
                         colors = ChipDefaults.secondaryChipColors(),
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp)
                     )
                 }
                 item {
@@ -109,6 +119,76 @@ fun MainScreen(
             HistoryList(viewModel, onChatSelected)
         }
     }
+}
+
+@Composable
+fun StatisticsScreen(viewModel: ChatViewModel) {
+    val dailyUsage by viewModel.dailyUsage.collectAsState()
+    val today = remember { SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date()) }
+    
+    val todayTokens = dailyUsage.find { it.date == today }?.totalTokens ?: 0
+    val totalTokens = dailyUsage.sumOf { it.totalTokens }
+
+    ScalingLazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        item { ListHeader { Text(stringResource(R.string.statistics)) } }
+        
+        item {
+            Card(
+                onClick = {},
+                modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.today_usage), style = MaterialTheme.typography.caption2)
+                    Text("$todayTokens", style = MaterialTheme.typography.title2, color = MaterialTheme.colors.primary)
+                    Text(stringResource(R.string.tokens), style = MaterialTheme.typography.caption3)
+                }
+            }
+        }
+
+        item {
+            Card(
+                onClick = {},
+                modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.total_usage), style = MaterialTheme.typography.caption2)
+                    Text("$totalTokens", style = MaterialTheme.typography.title2, color = MaterialTheme.colors.secondary)
+                    Text(stringResource(R.string.tokens), style = MaterialTheme.typography.caption3)
+                }
+            }
+        }
+
+        if (dailyUsage.isNotEmpty()) {
+            item { MarginSpacer(8.dp) }
+            // Only show up to 30 days of history
+            items(dailyUsage.sortedByDescending { it.date }.take(30)) { usage ->
+                TitleCard(
+                    onClick = {},
+                    title = { Text(usage.date) },
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 1.dp)
+                ) {
+                    Text("${usage.totalTokens} ${stringResource(R.string.tokens)}", style = MaterialTheme.typography.caption3)
+                }
+            }
+            item {
+                Text(
+                    text = stringResource(R.string.usage_history_limit_note),
+                    style = MaterialTheme.typography.caption3,
+                    textAlign = TextAlign.Center,
+                    color = Color.Gray,
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp, horizontal = 16.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun MarginSpacer(height: androidx.compose.ui.unit.Dp) {
+    Spacer(modifier = Modifier.height(height))
 }
 
 @Composable
@@ -301,9 +381,9 @@ fun SettingsScreen(settingsManager: SettingsManager, onSaved: () -> Unit) {
     fun launchInput(label: String, key: String) {
         pendingInputKey = key
         val intent = RemoteInputIntentHelper.createActionRemoteInputIntent()
-        val remoteInput = RemoteInput.Builder("input_value").setLabel(label).build()
+        val remoteInput = android.app.RemoteInput.Builder("input_value").setLabel(label).build()
         RemoteInputIntentHelper.putRemoteInputsExtra(intent, listOf(remoteInput))
-        try { launcher.launch(intent) } catch (_: ActivityNotFoundException) { showFallbackInput = true }
+        try { launcher.launch(intent) } catch (e: ActivityNotFoundException) { showFallbackInput = true }
     }
 
     ScalingLazyColumn(modifier = Modifier.fillMaxSize()) {
@@ -379,7 +459,7 @@ fun ChatScreen(viewModel: ChatViewModel) {
             .collect { (index, offset) ->
                 if (index > prevIndex || (index == prevIndex && offset > prevOffset)) {
                     isButtonVisible = false 
-                } else if (index < prevIndex || (offset < prevOffset)) {
+                } else if (index < prevIndex || (index == prevIndex && offset < prevOffset)) {
                     isButtonVisible = true 
                 }
                 prevIndex = index
@@ -483,9 +563,9 @@ fun ChatScreen(viewModel: ChatViewModel) {
                 ) {
                     Button(onClick = {
                         val intent = RemoteInputIntentHelper.createActionRemoteInputIntent()
-                        val remoteInput = RemoteInput.Builder("chat_input").setLabel("Message").build()
+                        val remoteInput = android.app.RemoteInput.Builder("chat_input").setLabel("Message").build()
                         RemoteInputIntentHelper.putRemoteInputsExtra(intent, listOf(remoteInput))
-                        try { launcher.launch(intent) } catch (_: ActivityNotFoundException) { showFallbackInput = true }
+                        try { launcher.launch(intent) } catch (e: ActivityNotFoundException) { showFallbackInput = true }
                     }, modifier = Modifier.size(ButtonDefaults.DefaultButtonSize)) { Text(stringResource(R.string.ask)) }
                 }
             }

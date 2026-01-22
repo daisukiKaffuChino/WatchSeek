@@ -18,6 +18,9 @@ import retrofit2.Retrofit
 import java.util.concurrent.TimeUnit
 import okio.buffer
 import okio.source
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class ChatViewModel(val settingsManager: SettingsManager, private val chatHistoryManager: ChatHistoryManager) : ViewModel() {
     private val _history = MutableStateFlow<List<Chat>>(emptyList())
@@ -31,6 +34,9 @@ class ChatViewModel(val settingsManager: SettingsManager, private val chatHistor
 
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
+
+    val dailyUsage: StateFlow<List<TokenUsage>> = chatHistoryManager.dailyUsage
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val apiKey: StateFlow<String?> = settingsManager.apiKey
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
@@ -50,7 +56,6 @@ class ChatViewModel(val settingsManager: SettingsManager, private val chatHistor
         viewModelScope.launch {
             chatHistoryManager.currentChat.collect { chat ->
                 if (chat != null) {
-                    // 修复：移除拦截逻辑，允许从 DataStore 同步最新的当前聊天（包括切换聊天）
                     _currentChat.value = chat
                 }
             }
@@ -164,8 +169,16 @@ class ChatViewModel(val settingsManager: SettingsManager, private val chatHistor
                                 
                                 try {
                                     val streamResponse = json.decodeFromString<ChatStreamResponse>(data)
-                                    val delta = streamResponse.choices.firstOrNull()?.delta ?: continue
                                     
+                                    // 记录 Token 使用量
+                                    streamResponse.usage?.let { usage ->
+                                        if (usage.totalTokens > 0) {
+                                            val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+                                            chatHistoryManager.recordTokenUsage(today, usage.totalTokens)
+                                        }
+                                    }
+
+                                    val delta = streamResponse.choices.firstOrNull()?.delta ?: continue
                                     val contentPart = delta.content ?: ""
                                     val reasoningPart = delta.reasoningContent ?: ""
                                     

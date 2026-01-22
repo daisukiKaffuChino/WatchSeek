@@ -19,7 +19,7 @@
     <string name="about_desc">A lightweight AI client for your wrist.</string>
     <string name="developer">Developer</string>
     <string name="open_source">Open Source</string>
-    <string name="made_with" translatable="false">Made with ❤️</string>
+    <string name="made_with">Made with ❤️</string>
     <string name="model">Model</string>
     <string name="auto_hide_button">Auto-hide Ask button</string>
     <string name="save">Save</string>
@@ -30,6 +30,10 @@
     <string name="thinking_complete">Thinking complete</string>
     <string name="ask" translatable="false">Ask</string>
     <string name="error">Error</string>
-    <string name="tile_label" translatable="false">Example tile</string>
-    <string name="complication_label" translatable="false">Example complication</string>
+    <string name="statistics">Statistics</string>
+    <string name="today_usage">Today\'s Usage</string>
+    <string name="total_usage">Total Usage</string>
+    <string name="tokens">tokens</string>
+    <string name="usage_history_limit_note">History list shows up to 30 days.</string>
+    <string name="complication_label">Today\'s token usage</string>
 </resources>

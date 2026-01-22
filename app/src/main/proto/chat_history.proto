@@ -6,6 +6,12 @@ option java_multiple_files = true;
 message ChatHistory {
   repeated Chat chats = 1;
   optional string current_chat_id = 2;
+  repeated TokenUsage daily_usage = 3;
+}
+
+message TokenUsage {
+  string date = 1; // 格式: YYYY-MM-DD
+  int32 total_tokens = 2;
 }
 
 message Chat {

@@ -34,8 +34,10 @@ class MainActivity : ComponentActivity() {
                         MainScreen(
                             viewModel = chatViewModel,
                             onChatSelected = { navController.navigate("chat") },
+                            onHistorySelected = { /* Already handled by pager in MainScreen */ },
                             onSettingsSelected = { navController.navigate("settings") },
-                            onAboutSelected = { navController.navigate("about") }
+                            onAboutSelected = { navController.navigate("about") },
+                            onStatisticsSelected = { navController.navigate("statistics") }
                         )
                     }
                     composable("chat") {
@@ -49,6 +51,9 @@ class MainActivity : ComponentActivity() {
                     }
                     composable("about") {
                         AboutScreen()
+                    }
+                    composable("statistics") {
+                        StatisticsScreen(viewModel = chatViewModel)
                     }
                 }
             }

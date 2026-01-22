@@ -15,6 +15,7 @@
     <string name="about_desc">戴在手腕上的轻量级 AI 客户端。</string>
     <string name="developer">开发者</string>
     <string name="open_source">开源项目</string>
+    <string name="made_with">用 ❤️ 制作</string>
     <string name="model">模型</string>
     <string name="auto_hide_button">自动隐藏提问按钮</string>
     <string name="save">保存</string>
@@ -24,4 +25,10 @@
     <string name="thinking_process">思考过程</string>
     <string name="thinking_complete">思考完成</string>
     <string name="error">错误</string>
+    <string name="statistics">使用统计</string>
+    <string name="today_usage">今日消耗</string>
+    <string name="total_usage">累计消耗</string>
+    <string name="tokens">tokens</string>
+    <string name="usage_history_limit_note">历史记录列表仅展示最近 30 天。</string>
+    <string name="complication_label">今日 token 用量</string>
 </resources>
