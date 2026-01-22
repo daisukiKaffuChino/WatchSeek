@@ -16,7 +16,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
-        setTheme(android.R.style.Theme_DeviceDefault)
+        setTheme(android.R.style.Theme_DeviceDefault_NoActionBar)
 
         val settingsManager = SettingsManager(applicationContext)
         val chatHistoryManager = ChatHistoryManager(applicationContext)
