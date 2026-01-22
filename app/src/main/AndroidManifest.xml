@@ -19,7 +19,7 @@
         android:theme="@android:style/Theme.DeviceDefault"
         android:usesCleartextTraffic="true">
         <service
-            android:name=".complication.MainComplicationService"
+            android:name=".complication.TokenUsageComplicationService"
             android:exported="true"
             android:icon="@drawable/rounded_data_usage_24"
             android:label="@string/complication_label"
