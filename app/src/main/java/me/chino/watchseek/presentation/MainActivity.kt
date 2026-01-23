@@ -24,7 +24,8 @@ class MainActivity : ComponentActivity() {
         setContent {
             WatchSeekTheme {
                 val navController = rememberSwipeDismissableNavController()
-                val chatViewModel: ChatViewModel = viewModel(factory = ChatViewModelFactory(settingsManager, chatHistoryManager))
+                // 传入 applicationContext
+                val chatViewModel: ChatViewModel = viewModel(factory = ChatViewModelFactory(applicationContext, settingsManager, chatHistoryManager))
 
                 SwipeDismissableNavHost(
                     navController = navController,
@@ -34,7 +35,6 @@ class MainActivity : ComponentActivity() {
                         MainScreen(
                             viewModel = chatViewModel,
                             onChatSelected = { navController.navigate("chat") },
-                            onHistorySelected = { /* Already handled by pager in MainScreen */ },
                             onSettingsSelected = { navController.navigate("settings") },
                             onAboutSelected = { navController.navigate("about") },
                             onStatisticsSelected = { navController.navigate("statistics") }

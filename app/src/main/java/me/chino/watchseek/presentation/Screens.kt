@@ -9,9 +9,11 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -19,14 +21,17 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -44,6 +49,7 @@ import androidx.wear.compose.material.dialog.Dialog
 import androidx.wear.input.RemoteInputIntentHelper
 import dev.jeziellago.compose.markdowntext.MarkdownText
 import me.chino.watchseek.data.Chat
+import me.chino.watchseek.data.ChatMessage
 import me.chino.watchseek.data.SettingsManager
 import me.chino.watchseek.R
 import kotlinx.coroutines.launch
@@ -54,69 +60,78 @@ import java.util.*
 fun MainScreen(
     viewModel: ChatViewModel,
     onChatSelected: () -> Unit,
-    onHistorySelected: () -> Unit,
     onSettingsSelected: () -> Unit,
     onAboutSelected: () -> Unit,
     onStatisticsSelected: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
     val pagerState = rememberPagerState(initialPage = 0, pageCount = { 2 })
+    
+    // 增加一个状态用于控制进入动画
+    var isVisible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { isVisible = true }
 
     BackHandler(enabled = pagerState.currentPage == 1) {
         scope.launch { pagerState.animateScrollToPage(0) }
     }
 
-    HorizontalPager(state = pagerState) { page ->
-        if (page == 0) {
-            ScalingLazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                item { ListHeader { Text(stringResource(R.string.app_name)) } }
-                item {
-                    Chip(
-                        onClick = { viewModel.createNewChat(); onChatSelected() },
-                        label = { Text(stringResource(R.string.new_chat)) },
-                        colors = ChipDefaults.primaryChipColors(),
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp)
-                    )
+    AnimatedVisibility(
+        visible = isVisible,
+        enter = fadeIn() + scaleIn(initialScale = 0.95f),
+        modifier = Modifier.fillMaxSize()
+    ) {
+        HorizontalPager(state = pagerState) { page ->
+            if (page == 0) {
+                ScalingLazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    item { ListHeader { Text(stringResource(R.string.app_name)) } }
+                    item {
+                        Chip(
+                            onClick = { viewModel.createNewChat(); onChatSelected() },
+                            label = { Text(stringResource(R.string.new_chat)) },
+                            colors = ChipDefaults.primaryChipColors(),
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp)
+                        )
+                    }
+                    item {
+                        Chip(
+                            onClick = onStatisticsSelected,
+                            label = { Text(stringResource(R.string.statistics)) },
+                            colors = ChipDefaults.secondaryChipColors(),
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp)
+                        )
+                    }
+                    item {
+                        Chip(
+                            onClick = onSettingsSelected,
+                            label = { Text(stringResource(R.string.settings)) },
+                            colors = ChipDefaults.secondaryChipColors(),
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp)
+                        )
+                    }
+                    item {
+                        Chip(
+                            onClick = onAboutSelected,
+                            label = { Text(stringResource(R.string.about)) },
+                            colors = ChipDefaults.secondaryChipColors(),
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp)
+                        )
+                    }
+                    item {
+                        Text(
+                            stringResource(R.string.swipe_left_history),
+                            style = MaterialTheme.typography.caption3,
+                            modifier = Modifier.padding(top = 8.dp),
+                            color = Color.Gray
+                        )
+                    }
                 }
-                item {
-                    Chip(
-                        onClick = onStatisticsSelected,
-                        label = { Text(stringResource(R.string.statistics)) },
-                        colors = ChipDefaults.secondaryChipColors(),
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp)
-                    )
-                }
-                item {
-                    Chip(
-                        onClick = onSettingsSelected,
-                        label = { Text(stringResource(R.string.settings)) },
-                        colors = ChipDefaults.secondaryChipColors(),
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp)
-                    )
-                }
-                item {
-                    Chip(
-                        onClick = onAboutSelected,
-                        label = { Text(stringResource(R.string.about)) },
-                        colors = ChipDefaults.secondaryChipColors(),
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp)
-                    )
-                }
-                item {
-                    Text(
-                        stringResource(R.string.swipe_left_history),
-                        style = MaterialTheme.typography.caption3,
-                        modifier = Modifier.padding(top = 8.dp),
-                        color = Color.Gray
-                    )
-                }
+            } else {
+                HistoryList(viewModel, onChatSelected)
             }
-        } else {
-            HistoryList(viewModel, onChatSelected)
         }
     }
 }
@@ -126,11 +141,13 @@ fun StatisticsScreen(viewModel: ChatViewModel) {
     val dailyUsage by viewModel.dailyUsage.collectAsState()
     val today = remember { SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date()) }
     
-    val todayTokens = dailyUsage.find { it.date == today }?.totalTokens ?: 0
-    val totalTokens = dailyUsage.sumOf { it.totalTokens }
+    val todayTokens = remember(dailyUsage) { dailyUsage.find { it.date == today }?.totalTokens ?: 0 }
+    val totalTokens = remember(dailyUsage) { dailyUsage.sumOf { it.totalTokens } }
+    val listState = rememberScalingLazyListState()
 
     ScalingLazyColumn(
         modifier = Modifier.fillMaxSize(),
+        state = listState,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         item { ListHeader { Text(stringResource(R.string.statistics)) } }
@@ -163,7 +180,6 @@ fun StatisticsScreen(viewModel: ChatViewModel) {
 
         if (dailyUsage.isNotEmpty()) {
             item { MarginSpacer(8.dp) }
-            // Only show up to 30 days of history
             items(dailyUsage.sortedByDescending { it.date }.take(30)) { usage ->
                 TitleCard(
                     onClick = {},
@@ -194,11 +210,18 @@ fun MarginSpacer(height: androidx.compose.ui.unit.Dp) {
 @Composable
 fun HistoryList(viewModel: ChatViewModel, onChatSelected: () -> Unit) {
     val history by viewModel.history.collectAsState()
+    val listState = rememberScalingLazyListState()
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var showClearAllDialog by remember { mutableStateOf(false) }
     var chatToDelete by remember { mutableStateOf<Chat?>(null) }
     var chatForMenu by remember { mutableStateOf<Chat?>(null) }
+    
+    val sdf = remember { SimpleDateFormat("MM/dd HH:mm", Locale.getDefault()) }
 
-    ScalingLazyColumn(modifier = Modifier.fillMaxSize()) {
+    ScalingLazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        state = listState
+    ) {
         item { ListHeader { Text(stringResource(R.string.history)) } }
         if (history.isEmpty()) {
             item {
@@ -211,24 +234,42 @@ fun HistoryList(viewModel: ChatViewModel, onChatSelected: () -> Unit) {
             }
         }
         items(history, key = { it.id }) { chat ->
+            val timeText = remember(chat.timestamp) { sdf.format(Date(chat.timestamp)) }
+            val lastMessage = remember(chat.messagesCount) {
+                if (chat.messagesCount > 0) chat.getMessages(chat.messagesCount - 1).content else ""
+            }
+
             AppCard(
                 onClick = { chatForMenu = chat },
                 appName = { Text(stringResource(R.string.chat)) },
-                time = {
-                    val sdf = remember { SimpleDateFormat("MM/dd HH:mm", Locale.getDefault()) }
-                    Text(sdf.format(Date(chat.timestamp)))
-                },
+                time = { Text(timeText) },
                 title = { Text(chat.title, maxLines = 1) },
                 modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)
             ) {
-                if (chat.messagesCount > 0) {
+                if (lastMessage.isNotEmpty()) {
                     Text(
-                        text = chat.getMessages(chat.messagesCount - 1).content,
+                        text = lastMessage,
                         maxLines = 1,
                         style = MaterialTheme.typography.caption3,
                         color = Color.Gray
                     )
                 }
+            }
+        }
+        
+        if (history.isNotEmpty()) {
+            item {
+                Chip(
+                    onClick = { showClearAllDialog = true },
+                    label = {
+                        Text(
+                            text = stringResource(R.string.clear_all),
+                            fontSize = 12.sp,
+                            textAlign = TextAlign.Center
+                        )
+                    },
+                    colors = ChipDefaults.secondaryChipColors(contentColor = Color.Red),
+                )
             }
         }
     }
@@ -266,6 +307,17 @@ fun HistoryList(viewModel: ChatViewModel, onChatSelected: () -> Unit) {
                 Button(onClick = { chatToDelete?.let { viewModel.deleteChat(it.id) }; showDeleteDialog = false }) { Text(stringResource(R.string.yes)) }
             },
             content = { Text(stringResource(R.string.delete_confirm), textAlign = TextAlign.Center) }
+        )
+    }
+
+    Dialog(showDialog = showClearAllDialog, onDismissRequest = { showClearAllDialog = false }) {
+        Alert(
+            title = { Text(stringResource(R.string.clear_all)) },
+            negativeButton = { Button(onClick = { showClearAllDialog = false }) { Text(stringResource(R.string.no)) } },
+            positiveButton = {
+                Button(onClick = { viewModel.clearAllHistory(); showClearAllDialog = false }) { Text(stringResource(R.string.yes)) }
+            },
+            content = { Text(stringResource(R.string.clear_all_confirm), textAlign = TextAlign.Center) }
         )
     }
 }
@@ -381,9 +433,9 @@ fun SettingsScreen(settingsManager: SettingsManager, onSaved: () -> Unit) {
     fun launchInput(label: String, key: String) {
         pendingInputKey = key
         val intent = RemoteInputIntentHelper.createActionRemoteInputIntent()
-        val remoteInput = android.app.RemoteInput.Builder("input_value").setLabel(label).build()
+        val remoteInput = RemoteInput.Builder("input_value").setLabel(label).build()
         RemoteInputIntentHelper.putRemoteInputsExtra(intent, listOf(remoteInput))
-        try { launcher.launch(intent) } catch (e: ActivityNotFoundException) { showFallbackInput = true }
+        try { launcher.launch(intent) } catch (_: ActivityNotFoundException) { showFallbackInput = true }
     }
 
     ScalingLazyColumn(modifier = Modifier.fillMaxSize()) {
@@ -434,6 +486,7 @@ fun SettingsScreen(settingsManager: SettingsManager, onSaved: () -> Unit) {
     })
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ChatScreen(viewModel: ChatViewModel) {
     val chat by viewModel.currentChat.collectAsState()
@@ -447,6 +500,9 @@ fun ChatScreen(viewModel: ChatViewModel) {
     val listState = rememberScalingLazyListState()
 
     var isButtonVisible by remember { mutableStateOf(true) }
+    
+    // 用于选择并复制文本的 Dialog 状态
+    var messageToCopy by remember { mutableStateOf<ChatMessage?>(null) }
 
     LaunchedEffect(listState, autoHideEnabled) {
         if (!autoHideEnabled) {
@@ -459,19 +515,12 @@ fun ChatScreen(viewModel: ChatViewModel) {
             .collect { (index, offset) ->
                 if (index > prevIndex || (index == prevIndex && offset > prevOffset)) {
                     isButtonVisible = false 
-                } else if (index < prevIndex || (index == prevIndex && offset < prevOffset)) {
+                } else if (index < prevIndex || (offset < prevOffset)) {
                     isButtonVisible = true 
                 }
                 prevIndex = index
                 prevOffset = offset
             }
-    }
-
-    LaunchedEffect(messages.size) {
-        if (messages.isNotEmpty()) {
-            listState.animateScrollToItem(messages.size - 1)
-            isButtonVisible = true 
-        }
     }
 
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -482,7 +531,10 @@ fun ChatScreen(viewModel: ChatViewModel) {
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        ScalingLazyColumn(modifier = Modifier.fillMaxSize(), state = listState) {
+        ScalingLazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            state = listState,
+        ) {
             item { ListHeader { Text(chat?.title ?: stringResource(R.string.chat)) } }
             
             if (!isKeySet) {
@@ -498,55 +550,75 @@ fun ChatScreen(viewModel: ChatViewModel) {
             items(messages) { msg ->
                 var showReasoning by remember { mutableStateOf(false) }
                 
-                Card(onClick = {}, modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
-                    Column {
-                        Text(
-                            text = if (msg.role == "user") "You" else "AI", 
-                            style = MaterialTheme.typography.caption3, 
-                            color = if (msg.role == "user") MaterialTheme.colors.secondary else MaterialTheme.colors.primary,
-                            fontWeight = FontWeight.Bold
-                        )
-                        
-                        // Reasoning Section (Collapsible)
-                        if (msg.reasoningContent.isNotEmpty()) {
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(4.dp))
-                                    .background(Color.White.copy(alpha = 0.05f))
-                                    .clickable { showReasoning = !showReasoning }
-                                    .padding(4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                val reasoningPrefix = if (showReasoning) "▼ " else "▶ "
-                                Text(
-                                    text = reasoningPrefix + stringResource(R.string.thinking_process), 
-                                    style = MaterialTheme.typography.caption3, 
-                                    color = MaterialTheme.colors.primaryVariant
-                                )
+                val msgContent = remember(msg.content, msg.reasoningContent) { msg.content }
+                val reasoningContent = remember(msg.reasoningContent) { msg.reasoningContent }
+                val haptic = LocalHapticFeedback.current
+                
+                Card(
+                    onClick = { }, 
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 2.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .combinedClickable(
+                                onClick = { },
+                                onLongClick = { 
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    messageToCopy = msg 
+                                }
+                            )
+                            .padding(8.dp)
+                    ) {
+                        Column {
+                            Text(
+                                text = if (msg.role == "user") "You" else "AI", 
+                                style = MaterialTheme.typography.caption3, 
+                                color = if (msg.role == "user") MaterialTheme.colors.secondary else MaterialTheme.colors.primary,
+                                fontWeight = FontWeight.Bold
+                            )
+                            
+                            if (reasoningContent.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .background(Color.White.copy(alpha = 0.05f))
+                                        .clickable { showReasoning = !showReasoning }
+                                        .padding(4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    val reasoningPrefix = if (showReasoning) "▼ " else "▶ "
+                                    Text(
+                                        text = reasoningPrefix + stringResource(R.string.thinking_process), 
+                                        style = MaterialTheme.typography.caption3, 
+                                        color = MaterialTheme.colors.primaryVariant
+                                    )
+                                }
+                                if (showReasoning) {
+                                    MarkdownText(
+                                        markdown = reasoningContent,
+                                        style = TextStyle(color = Color.Gray, fontSize = 12.sp),
+                                        modifier = Modifier.fillMaxWidth().padding(4.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(Color.White.copy(alpha = 0.1f)))
+                                Spacer(modifier = Modifier.height(4.dp))
                             }
-                            if (showReasoning) {
-                                MarkdownText(
-                                    markdown = msg.reasoningContent,
-                                    style = TextStyle(color = Color.Gray, fontSize = 12.sp),
-                                    modifier = Modifier.fillMaxWidth().padding(4.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(Color.White.copy(alpha = 0.1f)))
-                            Spacer(modifier = Modifier.height(4.dp))
-                        }
 
-                        // Main Content with Markdown Support
-                        val displayContent = if (msg.content.isEmpty() && msg.role != "user" && msg.reasoningContent.isNotEmpty()) 
-                            "*(" + stringResource(R.string.thinking_complete) + ")*" else msg.content
-                        
-                        MarkdownText(
-                            markdown = displayContent,
-                            style = TextStyle(color = Color.White, fontSize = 14.sp),
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                            val displayContent = if (msgContent.isEmpty() && msg.role != "user" && reasoningContent.isNotEmpty()) 
+                                "*(" + stringResource(R.string.thinking_complete) + ")*" else msgContent
+                            
+                            MarkdownText(
+                                markdown = displayContent,
+                                style = TextStyle(color = Color.White, fontSize = 14.sp),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
                     }
                 }
             }
@@ -561,12 +633,77 @@ fun ChatScreen(viewModel: ChatViewModel) {
                     enter = fadeIn() + slideInVertically { it },
                     exit = fadeOut() + slideOutVertically { it }
                 ) {
-                    Button(onClick = {
-                        val intent = RemoteInputIntentHelper.createActionRemoteInputIntent()
-                        val remoteInput = android.app.RemoteInput.Builder("chat_input").setLabel("Message").build()
-                        RemoteInputIntentHelper.putRemoteInputsExtra(intent, listOf(remoteInput))
-                        try { launcher.launch(intent) } catch (e: ActivityNotFoundException) { showFallbackInput = true }
-                    }, modifier = Modifier.size(ButtonDefaults.DefaultButtonSize)) { Text(stringResource(R.string.ask)) }
+                    Button(
+                        onClick = {
+                            if (isLoading) {
+                                viewModel.stopStreaming()
+                            } else {
+                                val intent = RemoteInputIntentHelper.createActionRemoteInputIntent()
+                                val remoteInput = RemoteInput.Builder("chat_input").setLabel("Type here…").build()
+                                RemoteInputIntentHelper.putRemoteInputsExtra(intent, listOf(remoteInput))
+                                try {
+                                    launcher.launch(intent)
+                                } catch (_: ActivityNotFoundException) {
+                                    showFallbackInput = true
+                                }
+                            }
+                        },
+                        modifier = Modifier.size(ButtonDefaults.DefaultButtonSize)
+                    ) {
+                        Text(if (isLoading) stringResource(R.string.stop) else stringResource(R.string.ask))
+                    }
+                }
+            }
+        }
+    }
+
+    // 复制页面的 Dialog
+    if (messageToCopy != null) {
+        val currentMsgToCopy = messageToCopy // 锁定当前消息，防止 Dialog 内部异步访问时 messageToCopy 已变 null
+        Dialog(showDialog = true, onDismissRequest = { messageToCopy = null }) {
+            ScalingLazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                item { ListHeader { Text(stringResource(R.string.select_to_copy)) } }
+                
+                currentMsgToCopy?.let { msg ->
+                    if (msg.content.isNotEmpty()) {
+                        item { Text("Content", style = MaterialTheme.typography.caption2, color = MaterialTheme.colors.primary) }
+                        item {
+                            SelectionContainer {
+                                Text(
+                                    text = msg.content,
+                                    style = MaterialTheme.typography.body2,
+                                    modifier = Modifier.padding(8.dp)
+                                )
+                            }
+                        }
+                    }
+                    
+                    if (msg.reasoningContent.isNotEmpty()) {
+                        item { Spacer(modifier = Modifier.height(8.dp)) }
+                        item { Text("Reasoning", style = MaterialTheme.typography.caption2, color = MaterialTheme.colors.secondary) }
+                        item {
+                            SelectionContainer {
+                                Text(
+                                    text = msg.reasoningContent,
+                                    style = MaterialTheme.typography.body2,
+                                    color = Color.Gray,
+                                    modifier = Modifier.padding(8.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+                
+                item {
+                    Chip(
+                        onClick = { messageToCopy = null },
+                        label = { Text(stringResource(R.string.done)) },
+                        colors = ChipDefaults.secondaryChipColors(),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
                 }
             }
         }
@@ -576,7 +713,7 @@ fun ChatScreen(viewModel: ChatViewModel) {
         Dialog(showDialog = true, onDismissRequest = { viewModel.clearError() }) {
             Alert(
                 title = { Text(stringResource(R.string.error), color = Color.Red) },
-                positiveButton = { Button(onClick = { viewModel.clearError() }, colors = ButtonDefaults.primaryButtonColors()) { Text(stringResource(R.string.ok)) } },
+                positiveButton = { Button(onClick = { viewModel.clearError() }, colors = ButtonDefaults.primaryButtonColors()) { Text("OK") } },
                 negativeButton = { },
                 content = { Text(error!!, textAlign = TextAlign.Center, style = MaterialTheme.typography.caption3) }
             )

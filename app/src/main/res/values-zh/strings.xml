@@ -23,7 +23,7 @@
     <string name="api_key_not_set">未设置 API 密钥。\n请在设置中进行配置。</string>
     <string name="no_messages">暂无消息。\n点击“Ask”开始！</string>
     <string name="thinking_process">思考过程</string>
-    <string name="thinking_complete">思考完成</string>
+    <string name="thinking_complete">等待思考完成</string>
     <string name="error">错误</string>
     <string name="statistics">使用统计</string>
     <string name="today_usage">今日消耗</string>
@@ -31,4 +31,8 @@
     <string name="tokens">tokens</string>
     <string name="usage_history_limit_note">历史记录列表仅展示最近 30 天。</string>
     <string name="complication_label">今日 token 用量</string>
+    <string name="clear_all">清空全部</string>
+    <string name="clear_all_confirm">确定要清空所有历史记录吗？</string>
+    <string name="done">完毕</string>
+    <string name="select_to_copy">选择以复制</string>
 </resources>

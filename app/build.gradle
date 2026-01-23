@@ -16,8 +16,8 @@ android {
         applicationId "me.chino.watchseek"
         minSdk 28
         targetSdk 36
-        versionCode 1
-        versionName "1.0"
+        versionCode 260124
+        versionName "1.1.0"
         ndk {
             abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
         }
@@ -55,6 +55,11 @@ android {
                     }
                 }
             }
+        }
+    }
+    kotlin {
+        compilerOptions {
+            freeCompilerArgs.add("-XXLanguage:+PropertyParamAnnotationDefaultTargetMode")
         }
     }
 }

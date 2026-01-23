@@ -128,4 +128,13 @@ class ChatHistoryManager(private val context: Context) {
                 .build()
         }
     }
+
+    suspend fun clearAllHistory() {
+        context.chatHistoryDataStore.updateData {
+            it.toBuilder()
+                .clearChats()
+                .setCurrentChatId("")
+                .build()
+        }
+    }
 }

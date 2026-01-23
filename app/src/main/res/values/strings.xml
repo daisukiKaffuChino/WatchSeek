@@ -27,13 +27,18 @@
     <string name="api_key_not_set">API Key not set.\nPlease configure it in Settings.</string>
     <string name="no_messages">No messages yet.\nTap \'Ask\' to start!</string>
     <string name="thinking_process">Thinking Process</string>
-    <string name="thinking_complete">Thinking complete</string>
+    <string name="thinking_complete">Wait for thinking complete</string>
     <string name="ask" translatable="false">Ask</string>
+    <string name="stop" translatable="false">Stop</string>
     <string name="error">Error</string>
     <string name="statistics">Statistics</string>
     <string name="today_usage">Today\'s Usage</string>
     <string name="total_usage">Total Usage</string>
     <string name="tokens">tokens</string>
+    <string name="clear_all">Clear All</string>
+    <string name="clear_all_confirm">Are you sure you want to clear all history?</string>
     <string name="usage_history_limit_note">History list shows up to 30 days.</string>
     <string name="complication_label">Today\'s token usage</string>
+    <string name="done">Done</string>
+    <string name="select_to_copy">Select to copy</string>
 </resources>
