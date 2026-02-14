@@ -1,11 +1,9 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     id("com.google.protobuf") version "0.9.6"
+    alias(libs.plugins.kotlin.android)
 }
 
 android {
@@ -33,11 +31,7 @@ android {
         sourceCompatibility JavaVersion.VERSION_21
         targetCompatibility JavaVersion.VERSION_21
     }
-    kotlin {
-        compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_21)
-        }
-    }
+
     useLibrary('wear-sdk')
     buildFeatures {
         compose true
@@ -57,11 +51,10 @@ android {
             }
         }
     }
-    kotlin {
-        compilerOptions {
-            freeCompilerArgs.add("-XXLanguage:+PropertyParamAnnotationDefaultTargetMode")
-        }
+    kotlinOptions {
+        jvmTarget = '21'
     }
+
 }
 
 dependencies {
@@ -99,6 +92,7 @@ dependencies {
     //implementation libs.compose.markdown
     implementation project(':markdowntext')
     implementation libs.coil.compose
+    implementation libs.core.ktx
 
     androidTestImplementation platform(libs.compose.bom)
     androidTestImplementation libs.ui.test.junit4
