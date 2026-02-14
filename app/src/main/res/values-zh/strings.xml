@@ -29,7 +29,7 @@
     <string name="today_usage">今日消耗</string>
     <string name="total_usage">累计消耗</string>
     <string name="tokens">tokens</string>
-    <string name="usage_history_limit_note">历史记录列表仅展示最近 30 天。</string>
+    <string name="usage_history_limit_note">超过 30 天的记录将按月合并。</string>
     <string name="complication_label">今日 token 用量</string>
     <string name="clear_all">清空全部</string>
     <string name="clear_all_confirm">确定要清空所有历史记录吗？</string>

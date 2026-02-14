@@ -53,6 +53,7 @@ import me.chino.watchseek.data.ChatMessage
 import me.chino.watchseek.data.SettingsManager
 import me.chino.watchseek.R
 import kotlinx.coroutines.launch
+import me.chino.watchseek.data.TokenUsage
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -140,10 +141,20 @@ fun MainScreen(
 fun StatisticsScreen(viewModel: ChatViewModel) {
     val dailyUsage by viewModel.dailyUsage.collectAsState()
     val today = remember { SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date()) }
-    
+
     val todayTokens = remember(dailyUsage) { dailyUsage.find { it.date == today }?.totalTokens ?: 0 }
     val totalTokens = remember(dailyUsage) { dailyUsage.sumOf { it.totalTokens } }
     val listState = rememberScalingLazyListState()
+
+    val sortedUsage = remember(dailyUsage) { dailyUsage.sortedByDescending { it.date } }
+    val (recentUsage, olderUsage) = remember(sortedUsage) {
+        if (sortedUsage.size > 30) {
+            Pair(sortedUsage.take(30), sortedUsage.drop(30))
+        } else {
+            Pair(sortedUsage, emptyList<TokenUsage>())
+        }
+    }
+    val olderUsageChunks = remember(olderUsage) { olderUsage.chunked(30) }
 
     ScalingLazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -151,7 +162,7 @@ fun StatisticsScreen(viewModel: ChatViewModel) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         item { ListHeader { Text(stringResource(R.string.statistics)) } }
-        
+
         item {
             Card(
                 onClick = {},
@@ -180,7 +191,8 @@ fun StatisticsScreen(viewModel: ChatViewModel) {
 
         if (dailyUsage.isNotEmpty()) {
             item { MarginSpacer(8.dp) }
-            items(dailyUsage.sortedByDescending { it.date }.take(30)) { usage ->
+
+            items(recentUsage) { usage ->
                 TitleCard(
                     onClick = {},
                     title = { Text(usage.date) },
@@ -189,14 +201,32 @@ fun StatisticsScreen(viewModel: ChatViewModel) {
                     Text("${usage.totalTokens} ${stringResource(R.string.tokens)}", style = MaterialTheme.typography.caption3)
                 }
             }
-            item {
-                Text(
-                    text = stringResource(R.string.usage_history_limit_note),
-                    style = MaterialTheme.typography.caption3,
-                    textAlign = TextAlign.Center,
-                    color = Color.Gray,
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp, horizontal = 16.dp)
-                )
+
+            items(olderUsageChunks) { chunk ->
+                if (chunk.isNotEmpty()) {
+                    val totalTokensInChunk: Int = chunk.sumOf { it.totalTokens }
+                    val startDate = chunk.last().date
+                    val endDate = chunk.first().date
+                    TitleCard(
+                        onClick = {},
+                        title = { Text("$startDate ~ $endDate") },
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 1.dp)
+                    ) {
+                        Text("$totalTokensInChunk ${stringResource(R.string.tokens)}", style = MaterialTheme.typography.caption3)
+                    }
+                }
+            }
+
+            if (olderUsageChunks.isNotEmpty()) {
+                item {
+                    Text(
+                        text = stringResource(R.string.usage_history_limit_note),
+                        style = MaterialTheme.typography.caption3,
+                        textAlign = TextAlign.Center,
+                        color = Color.Gray,
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp, horizontal = 16.dp)
+                    )
+                }
             }
         }
     }

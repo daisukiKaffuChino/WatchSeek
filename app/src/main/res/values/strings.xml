@@ -37,7 +37,7 @@
     <string name="tokens">tokens</string>
     <string name="clear_all">Clear All</string>
     <string name="clear_all_confirm">Are you sure you want to clear all history?</string>
-    <string name="usage_history_limit_note">History list shows up to 30 days.</string>
+    <string name="usage_history_limit_note">Records older than 30 days are consolidated by month.</string>
     <string name="complication_label">Today\'s token usage</string>
     <string name="done">Done</string>
     <string name="select_to_copy">Select to copy</string>
